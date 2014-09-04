@@ -1,0 +1,34 @@
+{
+  "name": "everygamebot",
+  "version": "0.0.0",
+  "description": "Tweeting every game.",
+  "main": "everygamebot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gangles/every-game-bot"
+  },
+  "keywords": [
+    "twitter",
+    "bot",
+    "language",
+    "video games"
+  ],
+  "author": "Matthew Gallant",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Gangles/every-game-bot/issues"
+  },
+  "homepage": "https://github.com/Gangles/every-game-bot",
+  "dependencies": {
+    "gm": "^1.16.0",
+    "image-size": "^0.3.2",
+    "node-rest-client": "^1.0.0",
+    "node-twitter": "^0.5.2",
+    "pg.js": "^3.4.2",
+    "request": "^2.40.0",
+    "xml2js": "^0.4.4"
+  }
+}
