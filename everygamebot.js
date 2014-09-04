@@ -79,7 +79,7 @@ var apiIndex = 0;
 var api = null;
 
 var attempts = 0;
-var MAX_ATTEMPTS = 5;
+var MAX_ATTEMPTS = 30;
 var DO_TWEET = true;
 
 function waitToBegin() {
@@ -111,6 +111,7 @@ function startNewTweet() {
 	try {
 		// reset global variables
 		gameToTweet = null;
+		api = null;
 		attempts = 0;
 		
 		// limit how long before games/subjects can be reused
@@ -183,7 +184,7 @@ function chooseSubject() {
 
 function getGames(subject) {
 	// ask the API for a list of games
-	api = getRandomAPI();
+	if (api == null) api = getRandomAPI();
 	api.getGames(subject);
 }
 
@@ -304,6 +305,7 @@ var giantBombAPI = {
 	
 		var description = api.parseDescription(game);
 		if (isOffensive(description)) return null;
+		if (description.split(" ").length < 10) return null;
 	
 		console.log( ">> " + title);
 		console.log( ">> " + "Thumbnail: " + thumbnail);
