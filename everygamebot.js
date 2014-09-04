@@ -208,6 +208,7 @@ var giantBombAPI = {
 	getGames : function (subject) {
 		try {
 			// ask giant bomb for games on the given subject
+			++ attempts;
 			console.log("Querying Giant Bomb for " + subject);
 			var URL = api.baseURL + api.searchURL + subject;
 			URL += '&api_key=' + conf.giant_bomb_key;
@@ -219,7 +220,8 @@ var giantBombAPI = {
 	
 	getGame : function (game) {
 		try {
-			// ask giant bomb for games on the given subject
+			// ask giant bomb for details about the given game
+			++ attempts;
 			console.log("Querying Giant Bomb about " + game.title);
 			var URL = api.baseURL + 'game/3030-' + game.id;
 			URL += '/?format=json&api_key=' + conf.giant_bomb_key;
@@ -283,7 +285,6 @@ var giantBombAPI = {
 				return api.getGame(gameToTweet);
 			} else if (attempts < MAX_ATTEMPTS) {
 				// failed to find an appropriate game, choose new subject
-				++ attempts;
 				return getNewSubject();
 			} else {
 				// too many attempts, give up for now
@@ -393,6 +394,7 @@ var boardGameGeekAPI = {
 	getGames : function (subject) {
 		try {
 			// ask BGG for some games on the given subject
+			++ attempts;
 			console.log("Querying Board Game Geek for " + subject);
 			restClient.get(api.searchURL + subject, api.gamesCallback, "xml");
 		} catch (e) {
@@ -403,6 +405,7 @@ var boardGameGeekAPI = {
 	getGame : function (game) {
 		try {
 			// get more info about an individual game
+			++ attempts;
 			console.log("Querying Board Game Geek about " + game.title);
 			restClient.get(api.gameURL + game.id, api.gameCallback, "xml");
 		} catch (e) {
@@ -447,7 +450,6 @@ var boardGameGeekAPI = {
 				return queryGameDB(gameToTweet);
 			} else {
 				// this game has no thumbnail, continue through the list
-				++attempts;
 				console.log("Failed to find thumbnail, restart.");
 				recentGames.push(gameToTweet.title);
 				return api.parseGameList();
@@ -470,7 +472,6 @@ var boardGameGeekAPI = {
 				api.getGame(gameToTweet);
 			} else if (attempts < MAX_ATTEMPTS) {
 				// failed to find an appropriate game, choose new subject
-				++ attempts;
 				return getNewSubject();
 			} else {
 				// too many attempts, give up for now
