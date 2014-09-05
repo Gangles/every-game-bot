@@ -308,12 +308,21 @@ var giantBombAPI = {
 		var description = api.parseDescription(game);
 		if (isOffensive(description)) return null;
 		if (description.split(" ").length < 10) return null;
-	
+		
+		var platform = api.parsePlatform(game);
+		if (platform.length < 2) return null;
+		
 		console.log( ">> " + title);
+		console.log( ">> " + platform);
 		console.log( ">> " + "Thumbnail: " + thumbnail);
 		console.log( ">> " + game.id);
 		
-		return { title: title, thumbnail: thumbnail, id: game.id };
+		return {
+			title: title,
+			thumbnail: thumbnail,
+			id: game.id,
+			platform: platform
+		};
 	},
 	
 	parseGameDetails : function (game) {
@@ -348,6 +357,36 @@ var giantBombAPI = {
 		if (game.hasOwnProperty('image') && game.image !== null) {
 			if (game.image.hasOwnProperty('small_url')) {
 				return game.image.small_url;
+			}
+		}
+		return "";
+	},
+	
+	parsePlatform : function(game) {
+		if (game.hasOwnProperty('platforms')) {
+			if (game.platforms !== null && game.platforms.length > 0) {
+				// use shorter versions of some names
+				var plat = game.platforms[0].name;
+				if (/PlayStation \d/.test(plat)) {
+					plat = game.platforms[0].abbreviation;
+				} else if (plat.indexOf('PlayStation Network (PS3)') >= 0) {
+					plat = 'PS3';
+				} else if (plat.indexOf('PlayStation Network (Vita)') >= 0) {
+					plat = 'PS Vita';
+				} else if (plat.indexOf('PlayStation Vita') >= 0) {
+					plat = 'PS Vita';
+				} else if (plat.indexOf('PlayStation Network (PSP)') >= 0) {
+					plat = 'PSP';
+				} else if (plat.indexOf('PlayStation Portable') >= 0) {
+					plat = 'PSP';
+				} else if (plat.indexOf('Xbox 360 Games Store') >= 0) {
+					plat = 'Xbox 360';
+				} else if (plat.indexOf('Nintendo Entertainment') >= 0) {
+					plat = game.platforms[0].abbreviation;
+				} else if (plat.indexOf('3DS eShop') >= 0) {
+					plat = 'Nintendo 3DS';
+				}
+				return plat;
 			}
 		}
 		return "";
@@ -686,12 +725,14 @@ function prepareTweet() {
 	try {
 		// assemble the tweet
 		var message = gameToTweet.title;
-		if(gameToTweet.developer.length > 0) {
-			message += " by " + gameToTweet.developer;
+		message += " by " + gameToTweet.developer;
+		message += " (";
+		if (gameToTweet.hasOwnProperty('platform')) {
+			if (message.length + gameToTweet.platform.length < 111) {
+				message += gameToTweet.platform + ", ";
+			}
 		}
-		if(gameToTweet.year.length == 4) {
-			message += " (" + gameToTweet.year + ")";
-		}
+		message += gameToTweet.year + ")";
 		
 		// make sure the cover exists
 		if(fs.existsSync(TILE_COVER)) {
