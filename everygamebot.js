@@ -299,8 +299,9 @@ var giantBombAPI = {
 		var title = api.parseTitle(game);
 		if (title.length < 3 || title.length > MAX_NAME_LENGTH) return null;
 		if (isOffensive(title)) return null;
+		if (isJapaneseName(title)) return null;
 		if (contains(recentGames, title)) return null;
-	
+		
 		var thumbnail = api.parseThumbnail(game);
 		if (thumbnail.length < 3) return null;
 	
@@ -318,10 +319,10 @@ var giantBombAPI = {
 	parseGameDetails : function (game) {
 		var dev = api.parseDevelopers(game);
 		if (isOffensive(dev)) return false;
-		if (dev.length < 3 || dev.length > MAX_DEV_LENGTH) dev = "";
+		if (dev.length < 3 || dev.length > MAX_DEV_LENGTH) return false;
 		
 		var year = api.parseYear(game);
-		if (year.length !== 4) year = "";
+		if (year.length !== 4) return false;
 		
 		gameToTweet.developer = dev;
 		gameToTweet.year = year;
@@ -353,18 +354,20 @@ var giantBombAPI = {
 	},
 	
 	parseDevelopers : function (game) {
-		if (game.hasOwnProperty('developers')) {
+		if (game.hasOwnProperty('developers') && game.developers !== null) {
 			var devs = game.developers;
-			if (devs == null) {
-				return "";
-			} else if (devs.length == 1) {
+			if (devs.length == 1) {
 				return devs[0].name;
 			} else if (devs.length == 2) {
 				return devs[0].name + " & " + devs[1].name;
 			} else if (devs.length > 2) {
 				return devs[0].name + " et al.";
-			} else {
-				return "";
+			}
+		}
+		// if there's no developer, a publisher will do...
+		if (game.hasOwnProperty('publishers') && game.publishers !== null) {
+			if (game.publishers.length > 0) {
+				return game.publishers[0].name;
 			}
 		}
 		return "";
@@ -486,6 +489,7 @@ var boardGameGeekAPI = {
 		var title = api.parseTitle(game);
 		if (title.length < 3 || title.length > MAX_NAME_LENGTH) return null;
 		if (isOffensive(title)) return null;
+		if (isJapaneseName(title)) return null;
 		if (contains(recentGames, title)) return null;
 		
 		var id = game.$.objectid;
@@ -519,13 +523,13 @@ var boardGameGeekAPI = {
 		
 		// get the developers, if available
 		var dev = api.parseDevelopers(game);
-		if (dev.length < 3 || dev.length > MAX_DEV_LENGTH) dev = "";
-		if (dev.indexOf('Uncredited') >= 0) dev = "";
-		if (dev.indexOf('Unknown') >= 0) dev = "";
+		if (dev.length < 3 || dev.length > MAX_DEV_LENGTH) return false;
+		if (dev.indexOf('Uncredited') >= 0) return false;
+		if (dev.indexOf('Unknown') >= 0) return false;
 		
 		// get the year published, if available
 		var year = api.parseYear(game);
-		if (year.length !== 4) year = "";
+		if (year.length !== 4) return false;
 		
 		// make sure the thumbnail exists
 		var thumbnail = api.parseThumbnail(game);
@@ -548,16 +552,21 @@ var boardGameGeekAPI = {
 	parseDevelopers : function (game) {
 		if (game.hasOwnProperty('boardgamedesigner')) {
 			var devs = game.boardgamedesigner;
-			if (devs == null) {
-				return ""
-			} else if (devs.length == 1) {
+			if (devs !== null) {
+				if (devs.length == 1) {
+					return devs[0]._;
+				} else if (devs.length == 2) {
+					return devs[0]._ + " & " + devs[1]._;
+				} else if (devs.length > 2) {
+					return devs[0]._ + " et al.";
+				}
+			}
+		}
+		// if there's no developer, a publisher will do...
+		if (game.hasOwnProperty('boardgamepublisher')) {
+			var devs = game.boardgamepublisher;
+			if (devs !== null && devs.length > 0) {
 				return devs[0]._;
-			} else if (devs.length == 2) {
-				return devs[0]._ + " & " + devs[1]._;
-			} else if (devs.length > 2) {
-				return devs[0]._ + " et al.";
-			} else {
-				return "";
 			}
 		}
 		return "";
@@ -652,7 +661,7 @@ function getThumbnailImage(URL) {
 			test.resize(size.width * scale, size.height * scale, "!");
 			
 			// tile the cover horizontally if needed
-			tile = Math.ceil((size.height * 2) / size.width) - 1;
+			tile = Math.ceil((size.height * 2.25) / size.width) - 1;
 			for (var i = 0; i < tile ; ++i) {
 				test.append(GAME_COVER, true);
 			}
@@ -783,6 +792,12 @@ function isOffensive(text) {
 		}
 	}
 	return false;
+}
+
+function isJapaneseName(text) {
+	// does the given text contain japanese characters?
+	if (text == null) return false;
+	return /[\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/.test(text);
 }
 
 // start the application by initializing the db connection
