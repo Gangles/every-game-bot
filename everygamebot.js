@@ -41,9 +41,10 @@ try {
 
 // wordnik API
 var getNounsURL = "http://api.wordnik.com/v4/words.json/randomWords?"
-+ "minCorpusCount=4000&minDictionaryCount=20&hasDictionaryDef=true&" +
-+ "excludePartOfSpeech=proper-noun-posessive,suffix,family-name,idiom,affix&"
-+ "includePartOfSpeech=noun,proper-noun&limit=10&maxLength=12&api_key=" + conf.wordnik_key;
++ "minCorpusCount=3000&minDictionaryCount=15&hasDictionaryDef=true" +
++ "&excludePartOfSpeech=proper-noun-posessive,suffix,family-name,idiom,affix"
++ "&includePartOfSpeech=noun,proper-noun,adjective&limit=10&maxLength=10"
++ "&api_key=" + conf.wordnik_key;
 
 // make sure the temp folder exists
 try {
@@ -132,9 +133,9 @@ function startNewTweet() {
 function getNewSubject() {
 	try {
 		// pop the most recently used subject
-		if(subjects.length > 0) subjects.shift();
+		if (subjects.length > 0) subjects.shift();
 		
-		if(subjects.length > 0) {
+		if (subjects.length > 0) {
 			// use a locally cached subject
 			chooseSubject();
 		} else {
@@ -164,11 +165,11 @@ function chooseSubject() {
 		if (subjects.length < 1) throw "Subject list should not be empty.";
 		subject = subjects[0];
 		
-		if(contains(recentSubjects, subject)) {
+		if (contains(recentSubjects, subject)) {
 			// we've used this subject recently
 			console.log(subject + " used recently, get new subject.")
 			getNewSubject();
-		} else if(isOffensive(subject)) {
+		} else if (isOffensive(subject)) {
 			// bad word filter found a match
 			console.log(subject + " is offensive, get new subject.")
 			getNewSubject();
@@ -208,11 +209,14 @@ var giantBombAPI = {
 	getGames : function (subject) {
 		try {
 			// ask giant bomb for games on the given subject
-			++ attempts;
-			console.log("Querying Giant Bomb for " + subject);
-			var URL = api.baseURL + api.searchURL + subject;
-			URL += '&api_key=' + conf.giant_bomb_key;
-			restClient.get(URL, api.gamesCallback, "json");
+			if (++attempts < MAX_ATTEMPTS) {
+				console.log("Querying Giant Bomb for " + subject);
+				var URL = api.baseURL + api.searchURL + subject;
+				URL += '&api_key=' + conf.giant_bomb_key;
+				restClient.get(URL, api.gamesCallback, "json");
+			} else {
+				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
+			}
 		} catch (e) {
 			console.log("Giant Bomb search error:", e.toString());
 		}
@@ -221,11 +225,14 @@ var giantBombAPI = {
 	getGame : function (game) {
 		try {
 			// ask giant bomb for details about the given game
-			++ attempts;
-			console.log("Querying Giant Bomb about " + game.title);
-			var URL = api.baseURL + 'game/3030-' + game.id;
-			URL += '/?format=json&api_key=' + conf.giant_bomb_key;
-			restClient.get(URL, api.gameCallback, "json");
+			if (++attempts < MAX_ATTEMPTS) {
+				console.log("Querying Giant Bomb about " + game.title);
+				var URL = api.baseURL + 'game/3030-' + game.id;
+				URL += '/?format=json&api_key=' + conf.giant_bomb_key;
+				restClient.get(URL, api.gameCallback, "json");
+			} else {
+				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
+			}
 		} catch (e) {
 			console.log("Giant Bomb query error:", e.toString());
 		}
@@ -256,10 +263,16 @@ var giantBombAPI = {
 				gameToTweet.source = "Giant Bomb";
 				return queryGameDB(gameToTweet);
 			} else {
-				// this game is unsuitable, continue down the list
-				console.log("Failed to find game details, restart.");
+				// this game is unsuitable
+				console.log("Game details are unsuitable, restart.");
 				recentGames.push(gameToTweet.title);
-				return api.parseGameList();
+				if (attempts % 5 == 0) {
+					// occasionally try a new topic instead of continuing on this one
+					return getNewSubject();
+				} else {
+					// continue on the same topic
+					return api.parseGameList();
+				}
 			}
 		} catch (e) {
 			console.log("Giant Bomb game callback error:", e.toString());
@@ -283,12 +296,9 @@ var giantBombAPI = {
 			if (gameToTweet !== null) {
 				// candidate game found, get more information
 				return api.getGame(gameToTweet);
-			} else if (attempts < MAX_ATTEMPTS) {
+			} else {
 				// failed to find an appropriate game, choose new subject
 				return getNewSubject();
-			} else {
-				// too many attempts, give up for now
-				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
 			}
 		} catch (e) {
 			console.log("Giant Bomb parsing error:", e.toString());
@@ -395,7 +405,11 @@ var giantBombAPI = {
 	parseDevelopers : function (game) {
 		if (game.hasOwnProperty('developers') && game.developers !== null) {
 			var devs = game.developers;
-			if (devs.length == 1) {
+			
+			if (devs.length > 0 && devs[0].name.indexOf('RailSimulator') >= 0) {
+				// way too many of these games...
+				return "";
+			} else if (devs.length == 1) {
 				return devs[0].name;
 			} else if (devs.length == 2) {
 				return devs[0].name + " & " + devs[1].name;
@@ -436,9 +450,12 @@ var boardGameGeekAPI = {
 	getGames : function (subject) {
 		try {
 			// ask BGG for some games on the given subject
-			++ attempts;
-			console.log("Querying Board Game Geek for " + subject);
-			restClient.get(api.searchURL + subject, api.gamesCallback, "xml");
+			if (++attempts < MAX_ATTEMPTS) {
+				console.log("Querying Board Game Geek for " + subject);
+				restClient.get(api.searchURL + subject, api.gamesCallback, "xml");
+			} else {
+				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
+			}
 		} catch (e) {
 			console.log("Board Game Geek search error:", e.toString());
 		}
@@ -447,9 +464,12 @@ var boardGameGeekAPI = {
 	getGame : function (game) {
 		try {
 			// get more info about an individual game
-			++ attempts;
-			console.log("Querying Board Game Geek about " + game.title);
-			restClient.get(api.gameURL + game.id, api.gameCallback, "xml");
+			if (++attempts < MAX_ATTEMPTS) {
+				console.log("Querying Board Game Geek about " + game.title);
+				restClient.get(api.gameURL + game.id, api.gameCallback, "xml");
+			} else {
+				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
+			}
 		} catch (e) {
 			console.log("Board Game Geek query error:", e.toString());
 		}
@@ -491,10 +511,16 @@ var boardGameGeekAPI = {
 				gameToTweet.source = "Board Game Geek";
 				return queryGameDB(gameToTweet);
 			} else {
-				// this game has no thumbnail, continue through the list
-				console.log("Failed to find thumbnail, restart.");
+				// this game is unsuitable
+				console.log("Game details are unsuitable, restart.");
 				recentGames.push(gameToTweet.title);
-				return api.parseGameList();
+				if (attempts % 5 == 0) {
+					// occasionally try a new topic instead of continuing on this one
+					return getNewSubject();
+				} else {
+					// continue on the same topic
+					return api.parseGameList();
+				}
 			}
 		} catch (e) {
 			console.log("Game XML error:", e.toString());
@@ -511,13 +537,10 @@ var boardGameGeekAPI = {
 			
 			if (gameToTweet !== null) {
 				// candidate game found, get more information
-				api.getGame(gameToTweet);
-			} else if (attempts < MAX_ATTEMPTS) {
+				return api.getGame(gameToTweet);
+			} else {
 				// failed to find an appropriate game, choose new subject
 				return getNewSubject();
-			} else {
-				// too many attempts, give up for now
-				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
 			}
 		} catch (e) {
 			console.log("Game list parsing error:", e.toString());
@@ -554,6 +577,7 @@ var boardGameGeekAPI = {
 			if (cat[i].indexOf('adult') >= 0) return false;
 			if (cat[i].indexOf('book') >= 0) return false;
 			if (cat[i].indexOf('expansion') >= 0) return false;
+			if (cat[i].indexOf('miniatures') >= 0) return false;
 		}
 		
 		// check for an offensive description
@@ -625,7 +649,8 @@ var boardGameGeekAPI = {
 		var categories = [];
 		if (game.hasOwnProperty('boardgamecategory')) {
 			for (var i = 0; i < game.boardgamecategory.length; ++i) {
-				categories.push(game.boardgamecategory[i]._.toLowerCase().trim());
+				var cat = game.boardgamecategory[i]._.toLowerCase().trim();
+				categories.push(cat);
 			}
 		}
 		return categories;
@@ -689,26 +714,31 @@ function getThumbnailImage(URL) {
 		var stream = fs.createWriteStream(GAME_COVER);
 		image.pipe(stream);
 		stream.on('close', function() {
-			// get the size of the image
-			var size = sizeOf(GAME_COVER);
-			if (size.height <= 0) throw "Image height error";
-			if (size.width <= 0) throw "Image width error";
+			try {
+				// get the size of the image
+				var size = sizeOf(GAME_COVER);
+				if (size.height <= 0) throw "Image height error";
+				if (size.width <= 0) throw "Image width error";
 			
-			// resize the game cover to height 220
-			var test = gm(GAME_COVER);
-			var scale = 220 / size.height;
-			test.resize(size.width * scale, size.height * scale, "!");
+				// resize the game cover to height 220
+				var test = gm(GAME_COVER);
+				var scale = 220 / size.height;
+				test.resize(size.width * scale, size.height * scale, "!");
 			
-			// tile the cover horizontally if needed
-			tile = Math.ceil((size.height * 2.25) / size.width) - 1;
-			for (var i = 0; i < tile ; ++i) {
-				test.append(GAME_COVER, true);
+				// tile the cover horizontally if needed
+				tile = Math.ceil((size.height * 2.25) / size.width) - 1;
+				for (var i = 0; i < tile ; ++i) {
+					test.append(GAME_COVER, true);
+				}
+				test.noProfile();
+				test.write(TILE_COVER, thumbnailCallback);
+			} catch (e) {
+				console.log("Image tiling error:", e.toString());
 			}
-			test.noProfile();
-			test.write(TILE_COVER, thumbnailCallback);
 		});
 	} catch (e) {
 		console.log("Thumbnail error:", e.toString());
+		return getNewSubject(); // try again!
 	}
 }
 
