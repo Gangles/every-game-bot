@@ -308,8 +308,7 @@ var giantBombAPI = {
 	parseGame : function (game) {
 		var title = api.parseTitle(game);
 		if (title.length < 3 || title.length > MAX_NAME_LENGTH) return null;
-		if (isOffensive(title)) return null;
-		if (isJapaneseName(title)) return null;
+		if (isOffensive(title) || isNotEnglish(title)) return null;
 		if (contains(recentGames, title)) return null;
 		
 		var thumbnail = api.parseThumbnail(game);
@@ -552,8 +551,7 @@ var boardGameGeekAPI = {
 	parseGame : function (game) {		
 		var title = api.parseTitle(game);
 		if (title.length < 3 || title.length > MAX_NAME_LENGTH) return null;
-		if (isOffensive(title)) return null;
-		if (isJapaneseName(title)) return null;
+		if (isOffensive(title) || isNotEnglish(title)) return null;
 		if (contains(recentGames, title)) return null;
 		
 		var id = game.$.objectid;
@@ -870,10 +868,28 @@ function isOffensive(text) {
 	return false;
 }
 
-function isJapaneseName(text) {
-	// does the given text contain japanese characters?
+function isNotEnglish(text) {
+	// does the given text contain non-english characters?
 	if (text == null) return false;
-	return /[\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/.test(text);
+	
+	// Cyrillic characters
+	if (/[\u0400-\u04FF]/.test(text)) return true;
+	
+	// Japanese characters
+	if (/[\u3040-\u309F]/.test(text)) return true;
+	if (/[\u30A0-\u30FF]/.test(text)) return true;
+	if (/[\uFF00-\uFF9F]/.test(text)) return true;
+	if (/[\u4E00-\u9FAF]/.test(text)) return true;
+	
+	// Chinese characters
+	if (/[\u4E00-\u9FFF]/.test(text)) return true;
+	if (/[\u3400-\u4DFF]/.test(text)) return true;
+	if (/[\uF900-\uFAFF]/.test(text)) return true;
+	
+	// Korean characters
+	if (/[\uAC00-\uD7AF]/.test(text)) return true;
+	
+	return false;
 }
 
 // start the application by initializing the db connection
