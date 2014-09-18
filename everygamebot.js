@@ -396,6 +396,8 @@ var giantBombAPI = {
 					plat = game.platforms[0].abbreviation;
 				} else if (plat.indexOf('3DS eShop') >= 0) {
 					plat = 'Nintendo 3DS';
+				} else if (plat.indexOf('Game.Com') >= 0) {
+					plat = 'Game Com';
 				}
 				return plat;
 			}
