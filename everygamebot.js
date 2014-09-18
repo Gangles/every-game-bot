@@ -337,11 +337,13 @@ var giantBombAPI = {
 	
 	parseGameDetails : function (game) {
 		var dev = api.parseDevelopers(game);
-		if (isOffensive(dev)) return false;
-		if (dev.length < 3 || dev.length > MAX_DEV_LENGTH) return false;
+		if (dev.length < 3 || isOffensive(dev)) return false;
+		
+		var total = dev.length + gameToTweet.title.length;
+		if (total > MAX_DEV_LENGTH + MAX_NAME_LENGTH) return false;
 		
 		var year = api.parseYear(game);
-		if (year.length !== 4) return false;
+		if (year.length !== 4 || !/\d{4}/.test(year)) return false;
 		
 		gameToTweet.developer = dev;
 		gameToTweet.year = year;
@@ -586,13 +588,16 @@ var boardGameGeekAPI = {
 		
 		// get the developers, if available
 		var dev = api.parseDevelopers(game);
-		if (dev.length < 3 || dev.length > MAX_DEV_LENGTH) return false;
+		if (dev.length < 3 || isOffensive(dev)) return false;
 		if (dev.indexOf('Uncredited') >= 0) return false;
 		if (dev.indexOf('Unknown') >= 0) return false;
 		
+		var total = dev.length + gameToTweet.title.length;
+		if (total > MAX_DEV_LENGTH + MAX_NAME_LENGTH) return false;
+		
 		// get the year published, if available
 		var year = api.parseYear(game);
-		if (year.length !== 4) return false;
+		if (year.length !== 4 || !/\d{4}/.test(year)) return false;
 		
 		// make sure the thumbnail exists
 		var thumbnail = api.parseThumbnail(game);
