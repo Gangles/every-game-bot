@@ -89,6 +89,7 @@ function waitToBegin() {
 	target = d.getMinutes() < 30? 30 : 90;
 	var timeout = 60 - d.getSeconds();
 	timeout += (target - d.getMinutes() - 1) * 60;
+	if (!DO_TWEET) timeout = 1; // debugging
 	console.log("Wait " + timeout + " for first tweet.");
 	setTimeout(beginTweeting, timeout * 1000);
 }
@@ -215,7 +216,7 @@ var giantBombAPI = {
 				URL += '&api_key=' + conf.giant_bomb_key;
 				restClient.get(URL, api.gamesCallback, "json");
 			} else {
-				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
+				console.log("Failed after " + MAX_ATTEMPTS + " attempts.");
 			}
 		} catch (e) {
 			console.log("Giant Bomb search error:", e.toString());
@@ -231,7 +232,7 @@ var giantBombAPI = {
 				URL += '/?format=json&api_key=' + conf.giant_bomb_key;
 				restClient.get(URL, api.gameCallback, "json");
 			} else {
-				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
+				console.log("Failed after " + MAX_ATTEMPTS + " attempts.");
 			}
 		} catch (e) {
 			console.log("Giant Bomb query error:", e.toString());
@@ -267,7 +268,7 @@ var giantBombAPI = {
 				console.log("Game details are unsuitable, restart.");
 				recentGames.push(gameToTweet.title);
 				if (attempts % 5 == 0) {
-					// occasionally try a new topic instead of continuing on this one
+					// occasionally try a new topic instead of continuing
 					return getNewSubject();
 				} else {
 					// continue on the same topic
@@ -337,6 +338,9 @@ var giantBombAPI = {
 	parseGameDetails : function (game) {
 		var dev = api.parseDevelopers(game);
 		if (dev.length < 3 || isOffensive(dev)) return false;
+		
+		// way too many of these games...
+		if (dev.indexOf('RailSimulator') >= 0) return false;
 		
 		var total = dev.length + gameToTweet.title.length;
 		if (total > MAX_DEV_LENGTH + MAX_NAME_LENGTH) return false;
@@ -409,10 +413,7 @@ var giantBombAPI = {
 		if (game.hasOwnProperty('developers') && game.developers !== null) {
 			var devs = game.developers;
 			
-			if (devs.length > 0 && devs[0].name.indexOf('RailSimulator') >= 0) {
-				// way too many of these games...
-				return "";
-			} else if (devs.length == 1) {
+			if (devs.length == 1) {
 				return devs[0].name;
 			} else if (devs.length == 2) {
 				return devs[0].name + " & " + devs[1].name;
@@ -471,7 +472,7 @@ var boardGameGeekAPI = {
 				console.log("Querying Board Game Geek about " + game.title);
 				restClient.get(api.gameURL + game.id, api.gameCallback, "xml");
 			} else {
-				console.log("Failed to find a game after " + MAX_ATTEMPTS + " attempts.");
+				console.log("Failed after " + MAX_ATTEMPTS + " attempts.");
 			}
 		} catch (e) {
 			console.log("Board Game Geek query error:", e.toString());
@@ -518,7 +519,7 @@ var boardGameGeekAPI = {
 				console.log("Game details are unsuitable, restart.");
 				recentGames.push(gameToTweet.title);
 				if (attempts % 5 == 0) {
-					// occasionally try a new topic instead of continuing on this one
+					// occasionally try a new topic instead of continuing
 					return getNewSubject();
 				} else {
 					// continue on the same topic
@@ -582,6 +583,9 @@ var boardGameGeekAPI = {
 			if (cat[i].indexOf('miniatures') >= 0) return false;
 		}
 		
+		// check if this game is an expansion
+		if (api.parseExpansion(game)) return false;
+		
 		// check for an offensive description
 		var desc = api.parseDescription(game);
 		if (isOffensive(desc)) return false;
@@ -642,7 +646,7 @@ var boardGameGeekAPI = {
 	
 	parseYear : function(game) {
 		if (game.hasOwnProperty('yearpublished')) {
-			if(game.yearpublished.length > 0) {
+			if (game.yearpublished.length > 0) {
 				return game.yearpublished[0];
 			}
 		}
@@ -653,12 +657,28 @@ var boardGameGeekAPI = {
 		// get the game's categories
 		var categories = [];
 		if (game.hasOwnProperty('boardgamecategory')) {
-			for (var i = 0; i < game.boardgamecategory.length; ++i) {
-				var cat = game.boardgamecategory[i]._.toLowerCase().trim();
-				categories.push(cat);
+			var categoryList = game.boardgamecategory;
+			if (categoryList !== null) {
+				for (var i = 0; i < categoryList.length; ++i) {
+					var cat = categoryList[i]._.toLowerCase().trim();
+					categories.push(cat);
+				}
 			}
 		}
 		return categories;
+	},
+	
+	parseExpansion : function (game) {
+		// is this game an expansion to another game?
+		if (game.hasOwnProperty('boardgameexpansion')) {
+			var exp = game.boardgameexpansion;
+			if (exp !== null && exp.length > 0) {
+				if (exp[0].$.hasOwnProperty('inbound')) {
+					return true;
+				}
+			}
+		}
+		return false;
 	},
 	
 	parseDescription : function (game) {
