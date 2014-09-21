@@ -43,7 +43,7 @@ try {
 var getNounsURL = "http://api.wordnik.com/v4/words.json/randomWords?"
 + "minCorpusCount=3000&minDictionaryCount=15&hasDictionaryDef=true" +
 + "&excludePartOfSpeech=proper-noun-posessive,suffix,family-name,idiom,affix"
-+ "&includePartOfSpeech=noun,proper-noun,adjective&limit=10&maxLength=10"
++ "&includePartOfSpeech=noun,proper-noun,adjective&limit=8&maxLength=10"
 + "&api_key=" + conf.wordnik_key;
 
 // make sure the temp folder exists
@@ -155,6 +155,14 @@ function subjectCallback(data) {
 		for (var i = 0; i < words.length; i++) {
 			subjects.push(words[i].word);
 		}
+		
+		// grab some words from a set of common words in game titles
+		var titleWords = fs.readFileSync('words_in_titles.json', 'ascii');
+		titleWords = JSON.parse(titleWords);
+		subjects.push(titleWords[Math.floor(Math.random() * titleWords.length)]);
+		subjects.push(titleWords[Math.floor(Math.random() * titleWords.length)]);
+		
+		subjects = shuffle(subjects);
 		chooseSubject();
 	} catch (e) {
 		console.log("Wordnik callback error:", e.toString());
