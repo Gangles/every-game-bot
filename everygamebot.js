@@ -356,6 +356,9 @@ var giantBombAPI = {
 		var year = api.parseYear(game);
 		if (year.length !== 4 || !/\d{4}/.test(year)) return false;
 		
+		var themes = api.parseThemes(game);
+		if (contains(themes, "adult")) return false;
+		
 		gameToTweet.developer = dev;
 		gameToTweet.year = year;
 		return true;
@@ -450,6 +453,17 @@ var giantBombAPI = {
 			}
 		}
 		return "";
+	},
+	
+	parseThemes : function (game) {
+		if (game.hasOwnProperty('themes') && game.themes !== null) {
+			var themes = [];
+			for (var i = 0; i < game.themes.length; ++i) {
+				themes.push(game.themes[i].name.toLowerCase());
+			}
+			return themes;
+		}
+		return [];
 	}
 };
 
@@ -606,6 +620,7 @@ var boardGameGeekAPI = {
 		if (devlow.indexOf('uncredited') >= 0) return false;
 		if (devlow.indexOf('unknown') >= 0) return false;
 		if (devlow.indexOf('self-published') >= 0) return false;
+		if (devlow.indexOf('web published') >= 0) return false;
 		
 		var total = dev.length + gameToTweet.title.length;
 		if (total > MAX_DEV_LENGTH + MAX_NAME_LENGTH) return false;
