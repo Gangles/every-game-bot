@@ -355,6 +355,7 @@ var giantBombAPI = {
 		
 		var year = api.parseYear(game);
 		if (year.length !== 4 || !/\d{4}/.test(year)) return false;
+		if (parseInt(year) > new Date().getFullYear()) return false;
 		
 		var themes = api.parseThemes(game);
 		if (contains(themes, "adult")) return false;
@@ -628,6 +629,7 @@ var boardGameGeekAPI = {
 		// get the year published, if available
 		var year = api.parseYear(game);
 		if (year.length !== 4 || !/\d{4}/.test(year)) return false;
+		if (parseInt(year) > new Date().getFullYear()) return false;
 		
 		// make sure the thumbnail exists
 		var thumbnail = api.parseThumbnail(game);
