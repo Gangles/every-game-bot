@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "description": "Tweeting every game.",
   "main": "everygamebot.js",
+  "engines": {
+    "node": "0.10.x"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
