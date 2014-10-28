@@ -646,9 +646,9 @@ var boardGameGeekAPI = {
 		if (game.hasOwnProperty('image') && game.image.length > 0) {
 			// make sure 'http' is prepended
 			if (/^\/\//.test(game.image[0]))
-				return 'http:' + game.image[0]
+				return 'http:' + game.image[0];
 			else
-				return game.image[0]
+				return game.image[0];
 		}
 		return "";
 	},
