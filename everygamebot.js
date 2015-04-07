@@ -84,11 +84,11 @@ var MAX_ATTEMPTS = 30;
 var DO_TWEET = true;
 
 function waitToBegin() {
-	// database is initialized, schedule tweet every hour at :30
+	// database is initialized, schedule tweet every other hour
 	var d = new Date();
-	target = d.getMinutes() < 30? 30 : 90;
 	var timeout = 60 - d.getSeconds();
-	timeout += (target - d.getMinutes() - 1) * 60;
+	timeout += (59 - d.getMinutes()) * 60;
+	timeout += (1 - ((d.getHours() + 1) % 2)) * 60 * 60;
 	if (!DO_TWEET) timeout = 1; // debugging
 	console.log("Wait " + timeout + " for first tweet.");
 	setTimeout(beginTweeting, timeout * 1000);
@@ -106,7 +106,7 @@ function beginTweeting() {
 	
 	// post a tweet, repeat every 60 minutes
 	startNewTweet();
-	setInterval(startNewTweet, 1000 * 60 * 60);
+	setInterval(startNewTweet, 1000 * 60 * 60 * 2);
 }
 
 function startNewTweet() {
