@@ -252,8 +252,8 @@ var giantBombAPI = {
 	gamesCallback : function (data) {
 		try {
 			// parse the game list data from giant bomb
-			console.log(data);
-			api.games = JSON.parse(data);
+			console.log(data.toString());
+			api.games = JSON.parse(data.toString());
 			api.resultCount = 0;
 			if (api.games.hasOwnProperty('number_of_page_results')) {
 				api.resultCount = api.games.number_of_page_results;
@@ -268,7 +268,7 @@ var giantBombAPI = {
 	gameCallback : function (data) {
 		try {
 			// parse the individual game data from giant bomb
-			var details = JSON.parse(data);
+			var details = JSON.parse(data.toString());
 			
 			if (api.parseGameDetails(details.results)) {
 				// candidate game found, check if we've tweeted it before
