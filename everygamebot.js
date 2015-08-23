@@ -105,14 +105,17 @@ function waitToBegin() {
 }
 
 function beginTweeting() {
-	// initialize the random bag of APIs
+	// initialize the bag of APIs
 	randomAPIList.push(giantBombAPI);
 	randomAPIList.push(giantBombAPI);
 	randomAPIList.push(boardGameGeekAPI);
 	randomAPIList.push(giantBombAPI);
 	randomAPIList.push(giantBombAPI);
 	randomAPIList.push(boardGameGeekAPI);
-	apiIndex = randomAPIList.length;
+
+	// initialize the index based on hour
+	var d = new Date();
+	apiIndex = Math.floor(d.getHours() * 0.5) % randomAPIList.length;
 	
 	// post a tweet
 	startNewTweet();
@@ -203,18 +206,8 @@ function chooseSubject() {
 
 function getGames(subject) {
 	// ask the API for a list of games
-	if (api == null) api = getRandomAPI();
+	if (api == null) api = randomAPIList[apiIndex];
 	api.getGames(subject);
-}
-
-function getRandomAPI() {
-	// choose a random game API to query
-	++apiIndex;
-	if( apiIndex > randomAPIList.length - 1 ) {
-		randomAPIList = shuffle(randomAPIList);
-		apiIndex = 0;
-	}
-	return randomAPIList[apiIndex];
 }
 
 var giantBombAPI = {
