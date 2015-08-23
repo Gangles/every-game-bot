@@ -252,6 +252,7 @@ var giantBombAPI = {
 	gamesCallback : function (data) {
 		try {
 			// parse the game list data from giant bomb
+			console.log(data);
 			api.games = JSON.parse(data);
 			api.resultCount = 0;
 			if (api.games.hasOwnProperty('number_of_page_results')) {
