@@ -27,6 +27,18 @@ var sizeOf = require('image-size');
 var Client = require('node-rest-client').Client;
 var restClient = new Client();
 
+// need a static IP for certain queries: https://addons.heroku.com/proximo
+var proximo = require('url').parse(process.env.PROXIMO_URL);
+var options_proximo = {
+	proxy : {
+		host : proximo.hostname,
+		port : proximo.port || 80,
+		user : proximo.auth.split(':')[0],
+		password : proximo.auth.split(':')[1]
+	}
+};
+var proximoClient = new Client(options_proximo);
+
 // avoid using slurs: https://github.com/dariusk/wordfilter/
 var blacklist = [];
 try {
@@ -224,7 +236,7 @@ var giantBombAPI = {
 				console.log("Querying Giant Bomb for " + subject);
 				var URL = api.baseURL + api.searchURL + subject;
 				URL += '&api_key=' + conf.giant_bomb_key;
-				restClient.get(URL, api.gamesCallback, "json");
+				proximoClient.get(URL, api.gamesCallback, "json");
 			} else {
 				console.log("Failed after " + MAX_ATTEMPTS + " attempts.");
 			}
@@ -240,7 +252,7 @@ var giantBombAPI = {
 				console.log("Querying Giant Bomb about " + game.title);
 				var URL = api.baseURL + 'game/3030-' + game.id;
 				URL += '/?format=json&api_key=' + conf.giant_bomb_key;
-				restClient.get(URL, api.gameCallback, "json");
+				proximoClient.get(URL, api.gameCallback, "json");
 			} else {
 				console.log("Failed after " + MAX_ATTEMPTS + " attempts.");
 			}
