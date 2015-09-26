@@ -72,6 +72,9 @@ var subject = "";
 var subjects = [];
 var gameToTweet = null;
 
+var postTweetDone = false;
+var dbInsertDone = false;
+
 var MAX_NAME_LENGTH = 53;
 var MAX_DEV_LENGTH = 53;
 
@@ -264,7 +267,6 @@ var giantBombAPI = {
 	gamesCallback : function (data) {
 		try {
 			// parse the game list data from giant bomb
-			console.log(data.toString());
 			api.games = JSON.parse(data.toString());
 			api.resultCount = 0;
 			if (api.games.hasOwnProperty('number_of_page_results')) {
@@ -857,7 +859,7 @@ function postTweet(message) {
 	try {
 		// post a new status to the twitter API
 		console.log("Posting tweet:", message);
-		if(DO_TWEET) {
+		if(DO_TWEET && !postTweetDone) {
 			twitterRestClient.statusesUpdateWithMedia({
 				'status': message,
 				'media[]': TILE_COVER
@@ -872,6 +874,8 @@ function postCallback(error, result) {
 	// twitter API callback from posting tweet
 	if (!error) {
 		console.log("Post tweet success!");
+		postTweetDone = true;
+		if (dbInsertDone) process.exit(0);
 	}
 	else {
 		console.log("Post tweet error:", error);
@@ -884,6 +888,8 @@ function insertGameDB(game) {
 		client.query(DB_INSERT, [game.title, game.source], function(err, result) {
 			if (err) return console.error('DB insert error:', err);
 			console.log("Game successfully added to database.");
+			dbInsertDone = true;
+			if (postTweetDone) process.exit(0);
 		});
 	} catch (e) {
 		console.log("DB insert error:", e.toString());
